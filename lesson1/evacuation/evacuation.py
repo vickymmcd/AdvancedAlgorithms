@@ -57,6 +57,7 @@ class FlowGraph:
         # set up a queue
         queue = [0]
         visited[0] = True
+        parent = [False]*len(self.graph)
 
          # Standard BFS Loop
         while queue:
@@ -71,8 +72,10 @@ class FlowGraph:
                 if visited[idx] == False:
                     queue.append(idx)
                     visited[idx] = True
-                    
+                    parent[idx] = u
 
+        # check if you reached the sink
+        return visited[len(self.graph)-1]
 
 def read_data():
     vertex_count, edge_count = map(int, input().split())
@@ -86,6 +89,9 @@ def read_data():
 def max_flow(graph, from_, to):
     flow = 0
     # your code goes here
+    while self.find_path(from_, to):
+        pass
+
     return flow
 
 
