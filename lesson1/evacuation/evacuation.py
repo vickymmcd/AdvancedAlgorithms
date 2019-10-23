@@ -48,7 +48,7 @@ class FlowGraph:
         self.edges[id].flow += flow
         self.edges[id ^ 1].flow -= flow
 
-    def find_path(self, start, end):
+    def find_path(self, start, end, parent):
         # find a shortest path from start to end (if one exists) using BFS
 
         # mark all vertices as not visited
@@ -57,7 +57,6 @@ class FlowGraph:
         # set up a queue
         queue = [0]
         visited[0] = True
-        parent = [False]*len(self.graph)
 
          # Standard BFS Loop
         while queue:
@@ -89,7 +88,16 @@ def read_data():
 def max_flow(graph, from_, to):
     flow = 0
     # your code goes here
-    while self.find_path(from_, to):
+    parent = [False]*len(graph.graph)
+
+    while graph.find_path(from_, to, parent):
+        s = to
+        path_flow = float("Inf")
+        while s != _from:
+            for edge in graph.graph[parent[s]]:
+                if edge.u == parent[s] and edge.v == s:
+                    curr_edge = edge
+            path_flow = min(path_flow, curr_edge.capacity)
         pass
 
     return flow
