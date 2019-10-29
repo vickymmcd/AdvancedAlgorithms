@@ -53,6 +53,8 @@ class FlowGraph:
 
         # mark all vertices as not visited
         visited = [False]*(len(self.graph))
+        print(len(visited))
+        print(self.graph)
 
         # set up a queue
         queue = [0]
@@ -68,10 +70,11 @@ class FlowGraph:
             # If a adjacent has not been visited, then mark it
             # visited and enqueue it
             for idx in self.graph[u]:
-                if visited[idx] == False:
-                    queue.append(idx)
-                    visited[idx] = True
-                    parent[idx] = u
+                v = self.edges[idx].u if self.edges[idx].u != u else self.edges[idx].v
+                if visited[v] == False and self.edges[idx].capacity > 0:
+                    queue.append(v)
+                    visited[v] = True
+                    parent[v] = u
 
         # check if you reached the sink
         return visited[len(self.graph)-1]
@@ -86,23 +89,47 @@ def read_data():
 
 
 def max_flow(graph, from_, to):
+    print("hello")
     flow = 0
     # your code goes here
     parent = [False]*len(graph.graph)
 
     while graph.find_path(from_, to, parent):
+        print("FROM: " + str(from_))
         s = to
+        print("TO: " + str(to))
+
         path_flow = float("Inf")
-        while s != _from:
+        while s != from_:
+            print(s)
             for edge in graph.graph[parent[s]]:
-                if edge.u == parent[s] and edge.v == s:
-                    curr_edge = edge
+                if graph.edges[edge].u == parent[s] and graph.edges[edge].v == s:
+                    curr_edge = graph.edges[edge]
+            s = parent[s]
             path_flow = min(path_flow, curr_edge.capacity)
-        pass
+
+        flow += path_flow
+        print("FLOW: " + str(flow))
+
+        # update residual capacities of the edges and reverse edges
+        # along the path
+        v = to
+        print("TO: " + str(to))
+        while(v !=  from_):
+            #print(v)
+            for edge in graph.graph[parent[v]]:
+                if graph.edges[edge].u == parent[v] and graph.edges[edge].v == s:
+                    curr_edge = graph.edges[edge]
+                    curr_edge.capacity -= path_flow
+                elif graph.edges[edge].u == s and graph.edges[edge].v == parent[v]:
+                    graph.edges[edge].capacity += path_flow
+                v = parent[v]
 
     return flow
 
 
 if __name__ == '__main__':
+    print("hola")
     graph = read_data()
+    print("hiya")
     print(max_flow(graph, 0, graph.size() - 1))
