@@ -8,6 +8,9 @@ class Edge:
         self.capacity = capacity
         self.flow = 0
 
+    def __str__(self):
+        return "Edge from: " + str(self.u) + " to " + str(self.v) + " with capacity " + str(self.capacity)
+
 # This class implements a bit unusual scheme for storing edges of the graph,
 # in order to retrieve the backward edge for a given edge quickly.
 class FlowGraph:
@@ -53,8 +56,6 @@ class FlowGraph:
 
         # mark all vertices as not visited
         visited = [False]*(len(self.graph))
-        print(len(visited))
-        print(self.graph)
 
         # set up a queue
         queue = [0]
@@ -89,19 +90,15 @@ def read_data():
 
 
 def max_flow(graph, from_, to):
-    print("hello")
     flow = 0
     # your code goes here
-    parent = [False]*len(graph.graph)
+    parent = [-1]*len(graph.graph)
 
     while graph.find_path(from_, to, parent):
-        print("FROM: " + str(from_))
         s = to
-        print("TO: " + str(to))
 
         path_flow = float("Inf")
         while s != from_:
-            print(s)
             for edge in graph.graph[parent[s]]:
                 if graph.edges[edge].u == parent[s] and graph.edges[edge].v == s:
                     curr_edge = graph.edges[edge]
@@ -109,27 +106,22 @@ def max_flow(graph, from_, to):
             path_flow = min(path_flow, curr_edge.capacity)
 
         flow += path_flow
-        print("FLOW: " + str(flow))
 
         # update residual capacities of the edges and reverse edges
         # along the path
         v = to
-        print("TO: " + str(to))
         while(v !=  from_):
-            #print(v)
-            for edge in graph.graph[parent[v]]:
-                if graph.edges[edge].u == parent[v] and graph.edges[edge].v == s:
-                    curr_edge = graph.edges[edge]
-                    curr_edge.capacity -= path_flow
-                elif graph.edges[edge].u == s and graph.edges[edge].v == parent[v]:
-                    graph.edges[edge].capacity += path_flow
-                v = parent[v]
+            for edge in graph.edges:
+                if edge.u == parent[v] and edge.v == v:
+                    edge.capacity -= path_flow
+                if edge.u == v and edge.v == parent[v]:
+                    edge.capacity += path_flow
+            v = parent[v]
 
     return flow
 
 
 if __name__ == '__main__':
-    print("hola")
     graph = read_data()
-    print("hiya")
+    parent = [-1]*len(graph.graph)
     print(max_flow(graph, 0, graph.size() - 1))
