@@ -4,67 +4,56 @@ import math
 import picos as pic
 import networkx as nx
 import itertools
+import swiglpk
 import cvxopt
-import random
+import re
 
 class Division:
     def __init__(self, filename):
-        self.numTeams = 0
         self.teams = {}
-        # self.teamNumbers = {}
-        # self.against = [[]]
-        self.subset = []
-        self.checked = False
         self.G = nx.DiGraph()
-
-        self.readDivision(filename)       
+        self.readDivision(filename)    
 
     def readDivision(self, filename):
         f = open(filename, "r")
         lines = [line.split() for line in f.readlines()]
         f.close()
 
-        self.numTeams = lines[0]
-
         lines = lines[1:]
         for ID, teaminfo in enumerate(lines):
             team = Team(int(ID), teaminfo[0], int(teaminfo[1]), int(teaminfo[2]), int(teaminfo[3]), list(map(int, teaminfo[4:])))
             self.teams[ID] = team     
 
-    def numberOfTeams(self):
-        return self.numTeams
-
     def get_team_IDs(self):
         return self.teams.keys()
 
-    def is_eliminated(self, team):
-        self.checkTeam(team)
-
-        flag = False
+    def is_eliminated(self, teamID):
+        flag1 = False
 
         temp = dict(self.teams)
-        del temp[team.get_ID()]
+        del temp[teamID]
 
         for _, other_team in temp.items():
             if team.get_wins() + team.get_remaining() < other_team.get_wins():
-                self.subset.append(other_team)
-                self.checked = True
-                flag = True # remove, just to test out this function
+                flag1 = True
 
-        # flag = flow_check(team)
-        # checked = True
-        return flag
+        # flag2 = self.network_flows(teamID)
+        flag2 = self.linear_programming(teamID)
+        return flag1 or flag2
 
-    def flow_check(self, teamID):
+    def network_flows(self, teamID):
         saturated_edges = self.create_network(teamID)
         flow_value, flow_dict = nx.maximum_flow(self.G, 'source', 'sink')
-        print(flow_value)
-        # TODO: reformat answer
-        # for match in flow_dict['source']:
-        #     print(flow_dict['source'][match] == saturated_edges[match])
+
+        flag = False
+        for match in flow_dict['source']:
+            if flow_dict['source'][match] != saturated_edges[match]:
+                flag = True
+
+        return flag
 
     def create_network(self, teamID):
-        # self.checkTeam(team)
+        self.G.clear()
 
         # helper dictionaries to hold capacities
         # delete the team we are comparing against
@@ -99,20 +88,19 @@ class Division:
 
         return saturated_edges
 
-    def create_lp(self, teamID):
-        self.create_network(teamID)
+    def linear_programming(self, teamID):
+        saturated_edges = self.create_network(teamID)
 
         maxflow=pic.Problem()
 
         # creating helper dictionaries for flows and capacities for picos
         c = {}
         f = {}
-        for edge in self.G.edges(data=True):
-            c[(edge[0], edge[1])] = edge[2]['capacity']
-            f[(edge[0], edge[1])] = maxflow.add_variable('f[{0}]'.format((edge[0], edge[1])),1)
-
-        # adding PICOs expression
-        cc = pic.new_param('c', c)
+        source_edges = []
+        for edge in self.G.edges():
+            f[edge] = maxflow.add_variable('f[{0}]'.format(edge),1)
+            if edge[0] is 'source':
+                source_edges.append(edge)
 
         # adding variables, contraints, and objective
         F = maxflow.add_variable('F', 1)
@@ -121,22 +109,19 @@ class Division:
         maxflow.set_objective('max', F)
 
         # solve the problem
-        maxflow.solve(verbose=0, solver='cvxopt')
+        maxflow.solve(verbose=0, solver='glpk')
 
         # list of edges that carry flow
         flow_edges=[e for e in self.G.edges() if f[e].value > 1e-4]
 
-        # print(F)
-        # print(flow_edges)
+        flag = False
 
-        for edge in self.G.edges(data=True):
-            print(f'edge: {edge}, \t\t\t value: {f[(edge[0], edge[1])].value}')
+        for flow in source_edges:
+            if saturated_edges[flow[1]] != f[flow].value:
+                flag = True
+
+        return flag
         
-
-    def certificateOfElimination(self, team):
-        self.checkTeam(team)
-
-        return self.subset if is_eliminated(team) else None
 
     def checkTeam(self, team):
         if team.get_ID() not in self.get_team_IDs():
@@ -170,90 +155,21 @@ class Team:
         return self.remaining
 
     def get_against(self, other_team=None):
+        try:
+            num_games = self.against[other_team]
+        except:
+            raise ValueError("Team does not exist in given input.")
 
-        if other_team is not None:
-            try:
-                num_games = self.against[other_team]
-            except:
-                raise ValueError("Team does not exist in given input.")
-
-            return num_games
-        else:
-            return self.against
+        return num_games
 
     def __str__(self):
         return f'{self.name} \t {self.wins} wins \t {self.losses} losses \t {self.remaining} remaining'
 
-def example():
-    # Use a fixed RNG seed so the result is reproducable.
-    random.seed(1)
-
-    # Number of nodes.
-    N=4
-
-    # Generate a graph using LCF notation.
-    G=nx.LCF_graph(N,[1,3,14],5)
-    G=nx.DiGraph(G) #edges are bidirected
-
-    # Generate edge capacities.
-    c={}
-    for e in sorted(G.edges(data=True)):
-        capacity = random.randint(1, 20)
-        e[2]['capacity'] = capacity
-        c[(e[0], e[1])]  = capacity
-        # print(e)      (0, 3, {'capacity': 3})
-        # print(c)      {(0, 1): 5, (0, 2): 19, (0, 3): 3}
-
-    # Convert the capacities to a PICOS expression.
-    cc=pic.new_param('c',c)
-
-    # Set source and sink nodes for flow computation.
-    s=0
-    t=3
-
-    maxflow2=pic.Problem()
-
-    # Add the flow variables.
-    f={}
-    for e in G.edges():
-        f[e]=maxflow2.add_variable('f[{0}]'.format(e),1)
-
-    # Add another variable for the total flow.
-    F=maxflow2.add_variable('F',1)
-
-    # Enforce all flow constraints at once.
-    maxflow2.add_constraint(pic.flow_Constraint(
-        G, f, source=0, sink=3, capacity='capacity', flow_value=F, graphName='G'))
-
-    # Set the objective.
-    maxflow2.set_objective('max',F)
-
-    # Solve the problem.
-    maxflow2.solve(verbose=0,solver='cvxopt')
-
-    # Determine which edges carry flow.
-    flow_edges=[e for e in G.edges() if f[e].value > 1e-4]
-
-    # print(F)            # 26.999999866136633
-    # print(flow_edges)   # [(0, 1), (0, 3), (0, 2), (1, 2), (1, 3), (2, 1), (2, 3), (3, 2), (3, 1)]
-    # print(G.edges())      # [(0, 1), (0, 3), (0, 2), (1, 0), (1, 2), (1, 3), (2, 1), (2, 3), (2, 0), (3, 2), (3, 0), (3, 1)]
-    # print(G.edges(data=True))     # [(0, 1, {'capacity': 5}), (0, 3, {'capacity': 3}),
-
 if __name__ == '__main__':
     filename = sys.argv[1]
-    # print(filename)
     division = Division(filename)
-    # for (ID, team) in division.teams.items():
-    #     print(team.name + ": Eliminated? " + str(division.is_eliminated(team)))
-    # print(str(division))
-    # division.flow_check(3)
-    # division.create_network(1)
-    # division.create_network(2)
-    # division.create_network(3)
-
-
-    # example()
-    division.create_lp(3)
+    for (ID, team) in division.teams.items():
+        print(team.name + ": Eliminated? " + str(division.is_eliminated(team.get_ID())))
 
 
 
