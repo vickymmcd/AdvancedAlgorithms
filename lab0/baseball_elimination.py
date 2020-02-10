@@ -56,35 +56,32 @@ class Division:
         self.G.clear()
 
         # helper dictionaries to hold capacities
+        matches = {}
+        teammaxes = {}
+        saturated_edges = {}
         # delete the team we are comparing against
         temp = dict(self.teams)
         del temp[teamID]
         # construct all the match capacities
-        matches = {}
         for team1, team2 in itertools.combinations(temp.keys(), 2):
-            matches[f'{team1}-{team2}'] = temp[team1].get_against(team2)
+            key = f'{team1}-{team2}'
+            matches[key] = temp[team1].get_against(team2)
+            saturated_edges[key] = matches[key]
         # construct all the team max capacities
-        teammaxes = {}
         mainteam_max = self.teams[teamID].get_wins() + self.teams[teamID].get_remaining()
         for team in temp.keys():
             teammaxes[f'{team}'] = mainteam_max - self.teams[team].get_remaining()
 
         # construct the actual graph
         # source to match edges
-        edges = []
-        saturated_edges = {}
         for match in matches:
-            edges.append(('source', match, {'capacity': matches[match]}))
-            saturated_edges[match] = matches[match]
+            self.G.add_edge('source', match, capacity=matches[match])
         # match to team max edges
         for match, team in itertools.product(matches.keys(), teammaxes.keys()):
-            edges.append((match, team, {'capacity': sys.maxsize}))
+            self.G.add_edge(match, team, capacity=sys.maxsize)
         # team max to sink edges
         for team in teammaxes:
-            edges.append((team, 'sink', {'capacity': teammaxes[team]}))
-        # add edges to graph
-        for edge in edges:
-            self.G.add_edge(edge[0], edge[1], capacity=edge[2]['capacity'])
+            self.G.add_edge(team, 'sink', capacity=teammaxes[team])
 
         return saturated_edges
 
@@ -110,9 +107,6 @@ class Division:
 
         # solve the problem
         maxflow.solve(verbose=0, solver='glpk')
-
-        # list of edges that carry flow
-        flow_edges=[e for e in self.G.edges() if f[e].value > 1e-4]
 
         flag = False
 
