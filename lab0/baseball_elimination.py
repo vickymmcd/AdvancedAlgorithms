@@ -45,6 +45,8 @@ class Division:
         saturated_edges = self.create_network(teamID)
         flow_value, flow_dict = nx.maximum_flow(self.G, 'source', 'sink')
 
+        print(flow_dict)
+
         flag = False
         for match in flow_dict['source']:
             if flow_dict['source'][match] != saturated_edges[match]:
@@ -78,7 +80,8 @@ class Division:
             self.G.add_edge('source', match, capacity=matches[match])
         # match to team max edges
         for match, team in itertools.product(matches.keys(), teammaxes.keys()):
-            self.G.add_edge(match, team, capacity=sys.maxsize)
+            if team in match:
+                self.G.add_edge(match, team, capacity=sys.maxsize)
         # team max to sink edges
         for team in teammaxes:
             self.G.add_edge(team, 'sink', capacity=teammaxes[team])
@@ -106,7 +109,8 @@ class Division:
         maxflow.set_objective('max', F)
 
         # solve the problem
-        maxflow.solve(verbose=0, solver='glpk')
+        # maxflow.solve(verbose=0, solver='glpk')
+        maxflow.solve(verbose=0, solver='cvxopt')
 
         flag = False
 
