@@ -12,7 +12,7 @@ class Division:
     def __init__(self, filename):
         self.teams = {}
         self.G = nx.DiGraph()
-        self.readDivision(filename)    
+        self.readDivision(filename)
 
     def readDivision(self, filename):
         f = open(filename, "r")
@@ -22,7 +22,7 @@ class Division:
         lines = lines[1:]
         for ID, teaminfo in enumerate(lines):
             team = Team(int(ID), teaminfo[0], int(teaminfo[1]), int(teaminfo[2]), int(teaminfo[3]), list(map(int, teaminfo[4:])))
-            self.teams[ID] = team     
+            self.teams[ID] = team
 
     def get_team_IDs(self):
         return self.teams.keys()
@@ -37,8 +37,8 @@ class Division:
             if team.get_wins() + team.get_remaining() < other_team.get_wins():
                 flag1 = True
 
-        # flag2 = self.network_flows(teamID)
-        flag2 = self.linear_programming(teamID)
+        flag2 = self.network_flows(teamID)
+        #flag2 = self.linear_programming(teamID)
         return flag1 or flag2
 
     def network_flows(self, teamID):
@@ -106,7 +106,7 @@ class Division:
         maxflow.add_constraint(pic.flow_Constraint(
             self.G, f, source='source', sink='sink', capacity='capacity', flow_value=F, graphName='G'))
         maxflow.set_objective('max', F)
-        
+
         # solve the problem
         maxflow.solve(verbose=0, solver='glpk')
         # maxflow.solve(verbose=0, solver='cvxopt')
@@ -118,7 +118,7 @@ class Division:
                 flag = True
 
         return flag
-        
+
 
     def checkTeam(self, team):
         if team.get_ID() not in self.get_team_IDs():
@@ -167,6 +167,3 @@ if __name__ == '__main__':
     division = Division(filename)
     for (ID, team) in division.teams.items():
         print(team.name + ": Eliminated? " + str(division.is_eliminated(team.get_ID())))
-
-
-

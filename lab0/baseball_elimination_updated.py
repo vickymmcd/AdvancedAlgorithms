@@ -12,7 +12,7 @@ class Division:
     def __init__(self, filename):
         self.teams = {}
         self.G = nx.DiGraph()
-        self.readDivision(filename)    
+        self.readDivision(filename)
 
     def readDivision(self, filename):
         f = open(filename, "r")
@@ -22,13 +22,14 @@ class Division:
         lines = lines[1:]
         for ID, teaminfo in enumerate(lines):
             team = Team(int(ID), teaminfo[0], int(teaminfo[1]), int(teaminfo[2]), int(teaminfo[3]), list(map(int, teaminfo[4:])))
-            self.teams[ID] = team     
+            self.teams[ID] = team
 
     def get_team_IDs(self):
         return self.teams.keys()
 
     def is_eliminated(self, teamID):
         flag1 = False
+        team = self.teams[teamID]
 
         temp = dict(self.teams)
         del temp[teamID]
@@ -38,7 +39,9 @@ class Division:
                 flag1 = True
 
         flag2 = self.network_flows(teamID)
-        # flag2 = self.linear_programming(teamID)
+        possible_wins = team.get_wins() + team.get_remaining()
+        print("Team could theoretically win: " + str(possible_wins))
+        #flag2 = self.linear_programming(teamID)
         return flag1 or flag2
 
     def network_flows(self, teamID):
@@ -72,7 +75,7 @@ class Division:
         # construct all the team max capacities
         mainteam_max = self.teams[teamID].get_wins() + self.teams[teamID].get_remaining()
         for team in temp.keys():
-            teammaxes[f'{team}'] = mainteam_max - self.teams[team].get_remaining()
+            teammaxes[f'{team}'] = mainteam_max - self.teams[team].get_wins()
 
         # construct the actual graph
         # source to match edges
@@ -105,18 +108,18 @@ class Division:
 
         # adding variables, contraints, and objective
         F = maxflow.add_variable('F', 1)
-        for i in G.nodes():
+        for i in self.G.nodes():
             if i == 'source':
-                maxflow.add_constraint(pic.sum([f[p,i] for p in G.predecessors(i)]) +
-                               F == pic.sum([f[i,p] for p in G.successors(i)]))
+                maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)]) +
+                               F == pic.sum([f[i,p] for p in self.G.successors(i)]))
             elif i != 'sink':
-                maxflow.add_constraint(pic.sum([f[p,i] for p in G.predecessors(i)])
-                                       == pic.sum([f[i,p] for p in G.successors(i)]))
+                maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)])
+                                       == pic.sum([f[i,p] for p in self.G.successors(i)]))
         maxflow.set_objective('max', F)
 
         # solve the problem
-        # maxflow.solve(verbose=0, solver='glpk')
-        maxflow.solve(verbose=0, solver='cvxopt')
+        maxflow.solve(verbose=0, solver='glpk')
+        #maxflow.solve(verbose=0, solver='cvxopt')
 
         flag = False
 
@@ -125,7 +128,7 @@ class Division:
                 flag = True
 
         return flag
-        
+
 
     def checkTeam(self, team):
         if team.get_ID() not in self.get_team_IDs():
@@ -174,6 +177,3 @@ if __name__ == '__main__':
     division = Division(filename)
     for (ID, team) in division.teams.items():
         print(team.name + ": Eliminated? " + str(division.is_eliminated(team.get_ID())))
-
-
-
