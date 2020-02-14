@@ -106,7 +106,7 @@ class Division:
         maxflow.add_constraint(pic.flow_Constraint(
             self.G, f, source='source', sink='sink', capacity='capacity', flow_value=F, graphName='G'))
         maxflow.set_objective('max', F)
-        
+
         # solve the problem
         maxflow.solve(verbose=0, solver='glpk')
         # maxflow.solve(verbose=0, solver='cvxopt')
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     filename = sys.argv[1]
     division = Division(filename)
     for (ID, team) in division.teams.items():
-        print(team.name + ": Eliminated? " + str(division.is_eliminated(team.get_ID())))
+        print(f'{team.name}: Eliminated? {division.is_eliminated(team.get_ID())}')
 
 
 
