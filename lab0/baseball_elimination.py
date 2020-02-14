@@ -166,4 +166,4 @@ if __name__ == '__main__':
     filename = sys.argv[1]
     division = Division(filename)
     for (ID, team) in division.teams.items():
-        print(team.name + ": Eliminated? " + str(division.is_eliminated(team.get_ID())))
+        print(f'{team.name}: Eliminated? {division.is_eliminated(team.get_ID())}')
