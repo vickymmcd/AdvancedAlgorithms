@@ -45,8 +45,6 @@ class Division:
         saturated_edges = self.create_network(teamID)
         flow_value, flow_dict = nx.maximum_flow(self.G, 'source', 'sink')
 
-        print(flow_dict)
-
         flag = False
         for match in flow_dict['source']:
             if flow_dict['source'][match] != saturated_edges[match]:
@@ -72,7 +70,7 @@ class Division:
         # construct all the team max capacities
         mainteam_max = self.teams[teamID].get_wins() + self.teams[teamID].get_remaining()
         for team in temp.keys():
-            teammaxes[f'{team}'] = mainteam_max - self.teams[team].get_remaining()
+            teammaxes[f'{team}'] = mainteam_max - self.teams[team].get_wins()
 
         # construct the actual graph
         # source to match edges
@@ -98,7 +96,8 @@ class Division:
         f = {}
         source_edges = []
         for edge in self.G.edges():
-            f[edge] = maxflow.add_variable('f[{0}]'.format(edge),1)
+            f[edge] = maxflow.add_variable(
+                'f[{0}]'.format(edge),1,upper =self.G[edge[0]][edge[1]]['capacity'])
             if edge[0] is 'source':
                 source_edges.append(edge)
 
@@ -107,10 +106,10 @@ class Division:
         maxflow.add_constraint(pic.flow_Constraint(
             self.G, f, source='source', sink='sink', capacity='capacity', flow_value=F, graphName='G'))
         maxflow.set_objective('max', F)
-
+        
         # solve the problem
-        # maxflow.solve(verbose=0, solver='glpk')
-        maxflow.solve(verbose=0, solver='cvxopt')
+        maxflow.solve(verbose=0, solver='glpk')
+        # maxflow.solve(verbose=0, solver='cvxopt')
 
         flag = False
 
