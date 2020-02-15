@@ -27,8 +27,10 @@ class Division:
     def get_team_IDs(self):
         return self.teams.keys()
 
-    def is_eliminated(self, teamID):
+    def is_eliminated(self, teamID, solver):
         flag1 = False
+        flag2 = False
+        team = self.teams[teamID]
 
         temp = dict(self.teams)
         del temp[teamID]
@@ -37,8 +39,11 @@ class Division:
             if team.get_wins() + team.get_remaining() < other_team.get_wins():
                 flag1 = True
 
-        flag2 = self.network_flows(teamID)
-        #flag2 = self.linear_programming(teamID)
+        if solver == "Network Flows":
+            flag2 = self.network_flows(teamID)
+        elif solver == "Linear Programming":
+            flag2 = self.linear_programming(teamID)
+
         return flag1 or flag2
 
     def network_flows(self, teamID):
@@ -166,4 +171,4 @@ if __name__ == '__main__':
     filename = sys.argv[1]
     division = Division(filename)
     for (ID, team) in division.teams.items():
-        print(f'{team.name}: Eliminated? {division.is_eliminated(team.get_ID())}')
+        print(f'{team.name}: Eliminated? {division.is_eliminated(team.get_ID(), "Linear Programming")}')
