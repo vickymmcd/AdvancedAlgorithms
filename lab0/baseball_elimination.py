@@ -78,7 +78,7 @@ class Division:
             if solver == "Network Flows":
                 flag1 = self.network_flows(saturated_edges)
             elif solver == "Linear Programming":
-                flag1 = self.linear_programming(teamID, saturated_edges)
+                flag1 = self.linear_programming(saturated_edges)
 
         return flag1
 
@@ -110,7 +110,7 @@ class Division:
         #TODO: implement this
         return False
 
-    def linear_programming(self, teamID, saturated_edges):
+    def linear_programming(self, saturated_edges):
         '''Uses linear programming to determine if the team with given team ID
         has been eliminated. We recommend using a picos solver to solve the
         linear programming problem once you have it set up.
