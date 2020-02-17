@@ -53,7 +53,6 @@ class Division:
         other team) this season.
         '''
         flag1 = False
-        flag2 = False
         team = self.teams[teamID]
 
         temp = dict(self.teams)
@@ -64,12 +63,13 @@ class Division:
                 flag1 = True
 
         saturated_edges = self.create_network(teamID)
-        if solver == "Network Flows":
-            flag2 = self.network_flows(teamID, saturated_edges)
-        elif solver == "Linear Programming":
-            flag2 = self.linear_programming(teamID, saturated_edges)
+        if not flag1:
+            if solver == "Network Flows":
+                flag1 = self.network_flows(teamID, saturated_edges)
+            elif solver == "Linear Programming":
+                flag1 = self.linear_programming(teamID, saturated_edges)
 
-        return flag1 or flag2
+        return flag1
 
     def network_flows(self, teamID, saturated_edges):
         '''Uses network flows to determine if the team with given team ID
@@ -138,36 +138,33 @@ class Division:
         f = {}
         source_edges = []
         for edge in self.G.edges():
-            f[edge] = maxflow.add_variable(
-                'f[{0}]'.format(edge),1,upper =self.G[edge[0]][edge[1]]['capacity'])
+
+            if self.G[edge[0]][edge[1]]['capacity'] < sys.maxsize:
+                f[edge] = maxflow.add_variable(
+                'f[{0}]'.format(edge),1,lower=0,upper =self.G[edge[0]][edge[1]]['capacity'])
+            else:
+                f[edge] = maxflow.add_variable(
+                'f[{0}]'.format(edge),1,lower=0)
             if edge[0] is 'source':
                 source_edges.append(edge)
 
-        # # adding variables, contraints, and objective
-        # F = maxflow.add_variable('F', 1)
-        # for i in self.G.nodes():
-        #     if i == 'source':
-        #         maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)]) +
-        #                        F == pic.sum([f[i,p] for p in self.G.successors(i)]))
-        #     elif i != 'sink':
-        #         maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)])
-        #                                == pic.sum([f[i,p] for p in self.G.successors(i)]))
-        # maxflow.set_objective('max', F)
-
         # adding variables, contraints, and objective
         F = maxflow.add_variable('F', 1)
-        maxflow.add_constraint(pic.flow_Constraint(
-            self.G, f, source='source', sink='sink', capacity='capacity', flow_value=F, graphName='G'))
+        for i in self.G.nodes():
+            if i == 'source':
+                maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)]) +
+                               F == pic.sum([f[i,p] for p in self.G.successors(i)]))
+            elif i != 'sink':
+                maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)])
+                                       == pic.sum([f[i,p] for p in self.G.successors(i)]))
         maxflow.set_objective('max', F)
 
         # solve the problem
-        maxflow.solve(verbose=0, solver='glpk')
-        # maxflow.solve(verbose=0, solver='cvxopt')
+        maxflow.solve(verbose=0, solver='cvxopt')
 
         flag = False
-
         for flow in source_edges:
-            if saturated_edges[flow[1]] != f[flow].value:
+            if abs(self.G[flow[0]][flow[1]]['capacity'] - f[flow].value) > 1e-5:
                 flag = True
 
         return flag
