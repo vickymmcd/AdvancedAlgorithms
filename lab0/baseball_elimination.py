@@ -82,19 +82,6 @@ class Division:
 
         return flag1
 
-    def network_flows(self, saturated_edges):
-        '''Uses network flows to determine if the team with given team ID
-        has been eliminated. You can feel free to use the built in networkx
-        maximum flow function or the maximum flow function you implemented as
-        part of the in class implementation activity.
-
-        saturated_edges: dictionary of saturated edges that maps team pairs to
-        the amount of additional games they have against each other
-        return: True if team is eliminated, False otherwise
-        '''
-        #TODO: implement this
-        return False
-
     def create_network(self, teamID):
         '''Builds up the network needed for solving the baseball elimination
         problem as a network flows problem & stores it in self.G. Returns a
@@ -109,6 +96,19 @@ class Division:
         saturated_edges = {}
 
         return saturated_edges
+
+    def network_flows(self, saturated_edges):
+        '''Uses network flows to determine if the team with given team ID
+        has been eliminated. You can feel free to use the built in networkx
+        maximum flow function or the maximum flow function you implemented as
+        part of the in class implementation activity.
+
+        saturated_edges: dictionary of saturated edges that maps team pairs to
+        the amount of additional games they have against each other
+        return: True if team is eliminated, False otherwise
+        '''
+        #TODO: implement this
+        return False
 
     def linear_programming(self, teamID, saturated_edges):
         '''Uses linear programming to determine if the team with given team ID
