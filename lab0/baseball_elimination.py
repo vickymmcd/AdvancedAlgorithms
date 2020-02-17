@@ -65,13 +65,13 @@ class Division:
         saturated_edges = self.create_network(teamID)
         if not flag1:
             if solver == "Network Flows":
-                flag1 = self.network_flows(teamID, saturated_edges)
+                flag1 = self.network_flows(saturated_edges)
             elif solver == "Linear Programming":
                 flag1 = self.linear_programming(teamID, saturated_edges)
 
         return flag1
 
-    def network_flows(self, teamID, saturated_edges):
+    def network_flows(self, saturated_edges):
         '''Uses network flows to determine if the team with given team ID
         has been eliminated. You can feel free to use the built in networkx
         maximum flow function or the maximum flow function you implemented as
