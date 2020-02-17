@@ -30,6 +30,9 @@ class Division:
     def readDivision(self, filename):
         '''Reads the information from the given file and builds up a dictionary
         of the teams that are a part of this division.
+
+        filename: name of text file representing tournament outcomes so far
+        & remaining games for each team
         '''
         f = open(filename, "r")
         lines = [line.split() for line in f.readlines()]
@@ -43,6 +46,9 @@ class Division:
     def get_team_IDs(self):
         '''Gets the list of IDs that are associated with each of the teams
         in this division.
+
+        return: list of IDs that are associated with each of the teams in the
+        division
         '''
         return self.teams.keys()
 
@@ -51,6 +57,11 @@ class Division:
         to determine if the team with the given ID is mathematically
         eliminated from winning the division (aka winning more games than any
         other team) this season.
+
+        teamID: ID of team that we want to check if it is eliminated
+        solver: string representing whether to use the network flows or linear
+        programming solver
+        return: True if eliminated, False otherwise
         '''
         flag1 = False
         team = self.teams[teamID]
@@ -76,7 +87,12 @@ class Division:
         has been eliminated. You can feel free to use the built in networkx
         maximum flow function or the maximum flow function you implemented as
         part of the in class implementation activity.
+
+        saturated_edges: dictionary of saturated edges that maps team pairs to
+        the amount of additional games they have against each other
+        return: True if team is eliminated, False otherwise
         '''
+        #TODO: implement this
         return False
 
     def create_network(self, teamID):
@@ -84,37 +100,13 @@ class Division:
         problem as a network flows problem & stores it in self.G. Returns a
         dictionary of saturated edges that maps team pairs to the amount of
         additional games they have against each other.
+
+        teamID: ID of team that we want to check if it is eliminated
+        return: dictionary of saturated edges that maps team pairs to
+        the amount of additional games they have against each other
         '''
-        self.G.clear()
 
-        # helper dictionaries to hold capacities
-        matches = {}
-        teammaxes = {}
         saturated_edges = {}
-        # delete the team we are comparing against
-        temp = dict(self.teams)
-        del temp[teamID]
-        # construct all the match capacities
-        for team1, team2 in itertools.combinations(temp.keys(), 2):
-            key = f'{team1}-{team2}'
-            matches[key] = temp[team1].get_against(team2)
-            saturated_edges[key] = matches[key]
-        # construct all the team max capacities
-        mainteam_max = self.teams[teamID].wins + self.teams[teamID].remaining
-        for team in temp.keys():
-            teammaxes[f'{team}'] = mainteam_max - self.teams[team].wins
-
-        # construct the actual graph
-        # source to match edges
-        for match in matches:
-            self.G.add_edge('source', match, capacity=matches[match])
-        # match to team max edges
-        for match, team in itertools.product(matches.keys(), teammaxes.keys()):
-            if team in match:
-                self.G.add_edge(match, team, capacity=sys.maxsize)
-        # team max to sink edges
-        for team in teammaxes:
-            self.G.add_edge(team, 'sink', capacity=teammaxes[team])
 
         return saturated_edges
 
