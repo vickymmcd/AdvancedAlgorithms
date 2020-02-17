@@ -77,14 +77,7 @@ class Division:
         maximum flow function or the maximum flow function you implemented as
         part of the in class implementation activity.
         '''
-        flow_value, flow_dict = nx.maximum_flow(self.G, 'source', 'sink')
-
-        flag = False
-        for match in flow_dict['source']:
-            if flow_dict['source'][match] != saturated_edges[match]:
-                flag = True
-
-        return flag
+        return False
 
     def create_network(self, teamID):
         '''Builds up the network needed for solving the baseball elimination
