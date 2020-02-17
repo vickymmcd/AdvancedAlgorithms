@@ -186,7 +186,10 @@ class Team:
         return f'{self.name} \t {self.wins} wins \t {self.losses} losses \t {self.remaining} remaining'
 
 if __name__ == '__main__':
-    filename = sys.argv[1]
-    division = Division(filename)
-    for (ID, team) in division.teams.items():
-        print(f'{team.name}: Eliminated? {division.is_eliminated(team.ID, "Linear Programming")}')
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+        division = Division(filename)
+        for (ID, team) in division.teams.items():
+            print(f'{team.name}: Eliminated? {division.is_eliminated(team.ID, "Linear Programming")}')
+    else:
+        print("To run this code, please specify an input file name. Example: python baseball_elimination.py teams2.txt.")
