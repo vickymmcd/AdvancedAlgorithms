@@ -7,9 +7,7 @@ import math
 import picos as pic
 import networkx as nx
 import itertools
-import swiglpk
 import cvxopt
-import re
 
 
 class Division:
