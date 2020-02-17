@@ -114,22 +114,30 @@ class Division:
         '''Uses linear programming to determine if the team with given team ID
         has been eliminated. We recommend using a picos solver to solve the
         linear programming problem once you have it set up.
+        Do not use the flow_constraint method that Picos provides (it does all of the work for you)
+        We want you to set up the constraint equations using picos (hint: add_constraint is the method you want)
+
+        saturated_edges: 
+        returns True if team is eliminated, false otherwise
         '''
 
         maxflow=pic.Problem()
 
         # creating helper dictionaries for flows and capacities for picos
-        c = {}
         f = {}
         source_edges = []
         for edge in self.G.edges():
-
+            # if max capacity is not infinity, then set lower bound to 0 and upper to capacity
             if self.G[edge[0]][edge[1]]['capacity'] < sys.maxsize:
+                # add to flow dict, a picos variable
                 f[edge] = maxflow.add_variable(
                 'f[{0}]'.format(edge),1,lower=0,upper =self.G[edge[0]][edge[1]]['capacity'])
+            # if max capacity is infinity, then only set lower bound to 0
             else:
                 f[edge] = maxflow.add_variable(
                 'f[{0}]'.format(edge),1,lower=0)
+
+            # list of edges coming out of source
             if edge[0] is 'source':
                 source_edges.append(edge)
 
@@ -137,11 +145,15 @@ class Division:
         F = maxflow.add_variable('F', 1)
         for i in self.G.nodes():
             if i == 'source':
+                # add constraint, such that flow coming into the source and flow that source
+                # generates is equal to flow coming out of source
                 maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)]) +
                                F == pic.sum([f[i,p] for p in self.G.successors(i)]))
             elif i != 'sink':
+                # add constraint, such that flow coming into the node is equal to flow coming out of node
                 maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)])
                                        == pic.sum([f[i,p] for p in self.G.successors(i)]))
+        # maximize flow that source generates
         maxflow.set_objective('max', F)
 
         # solve the problem
@@ -149,6 +161,7 @@ class Division:
 
         flag = False
         for flow in source_edges:
+            # check to see if capacity is saturated, if not (aka diff is bigger than 0) it is eliminated
             if abs(self.G[flow[0]][flow[1]]['capacity'] - f[flow].value) > 1e-5:
                 flag = True
 
