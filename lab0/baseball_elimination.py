@@ -8,6 +8,8 @@ import picos as pic
 import networkx as nx
 import itertools
 import cvxopt
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 class Division:
@@ -75,38 +77,44 @@ class Division:
         dictionary of saturated edges that maps team pairs to the amount of
         additional games they have against each other.
         '''
+        
         self.G.clear()
 
         # helper dictionaries to hold capacities
-        matches = {}
-        teammaxes = {}
         saturated_edges = {}
-        # delete the team we are comparing against
-        temp = dict(self.teams)
-        del temp[teamID]
-        # construct all the match capacities
-        for team1, team2 in itertools.combinations(temp.keys(), 2):
-            key = f'{team1}-{team2}'
-            matches[key] = temp[team1].get_against(team2)
-            saturated_edges[key] = matches[key]
-        # construct all the team max capacities
         mainteam_max = self.teams[teamID].wins + self.teams[teamID].remaining
-        for team in temp.keys():
-            teammaxes[f'{team}'] = mainteam_max - self.teams[team].wins
 
-        # construct the actual graph
-        # source to match edges
-        for match in matches:
-            self.G.add_edge('source', match, capacity=matches[match])
-        # match to team max edges
-        for match, team in itertools.product(matches.keys(), teammaxes.keys()):
-            if team in match:
-                self.G.add_edge(match, team, capacity=sys.maxsize)
-        # team max to sink edges
-        for team in teammaxes:
-            self.G.add_edge(team, 'sink', capacity=teammaxes[team])
+        team_ids = list(self.get_team_IDs())
+        # Remove main teamID from this list (they don't have a match against themselves)
+        team_ids.remove(teamID) 
+
+        # these three lists could be all_edges, they're separated for understanding
+        sink_edges = []
+        mid_edges = []
+        source_edges = []
+
+        teams_already_battled = []
+        for i, id in enumerate(team_ids):
+
+            max_win = mainteam_max - self.teams[id].wins
+            sink_edges.append((self.teams[id].name, "sink", {'capacity': max_win, 'flow' : 0}))
+
+            teams_already_battled.append(i)
+
+            for j, other_team_id in enumerate(team_ids):
+                if j not in teams_already_battled:
+                    remaining_games = self.teams[id].get_against(other_team_id)
+                    mid_edges.append((self.teams[id].name + "-" + self.teams[other_team_id].name, self.teams[id].name, {"capacity": remaining_games, 'flow':0}))
+                    mid_edges.append((self.teams[id].name + "-" + self.teams[other_team_id].name, self.teams[other_team_id].name, {"capacity": remaining_games, 'flow':0}))
+                    source_edges.append(("source", self.teams[id].name + "-" + self.teams[other_team_id].name, {"capacity": remaining_games, 'flow':0}))
+                    saturated_edges[self.teams[id].name + "-" + self.teams[other_team_id].name] = remaining_games
+
+        self.G.add_edges_from(sink_edges)
+        self.G.add_edges_from(mid_edges)
+        self.G.add_edges_from(source_edges)
 
         return saturated_edges
+       
 
     def network_flows(self, saturated_edges):
         '''Uses network flows to determine if the team with given team ID
@@ -115,7 +123,7 @@ class Division:
         part of the in class implementation activity.
         '''
         flow_value, flow_dict = nx.maximum_flow(self.G, 'source', 'sink')
-
+        #print(saturated_edges)
         flag = False
         for match in flow_dict['source']:
             if flow_dict['source'][match] != saturated_edges[match]:
@@ -140,6 +148,7 @@ class Division:
         f = {}
         source_edges = []
         for edge in self.G.edges():
+            #print(edge)
             # if max capacity is not infinity, then set lower bound to 0 and upper to capacity
             if self.G[edge[0]][edge[1]]['capacity'] < sys.maxsize:
                 # add to flow dict, a picos variable
@@ -161,7 +170,7 @@ class Division:
                 # add constraint, such that flow coming into the source and flow that source
                 # generates is equal to flow coming out of source
                 maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)]) +
-                               F == pic.sum([f[i,p] for p in self.G.successors(i)]))
+                            F == pic.sum([f[i,p] for p in self.G.successors(i)]))
             elif i != 'sink':
                 # add constraint, such that flow coming into the node is equal to flow coming out of node
                 maxflow.add_constraint(pic.sum([f[p,i] for p in self.G.predecessors(i)])
@@ -240,3 +249,4 @@ if __name__ == '__main__':
     division = Division(filename)
     for (ID, team) in division.teams.items():
         print(f'{team.name}: Eliminated? {division.is_eliminated(team.ID, "Linear Programming")}')
+        # break
