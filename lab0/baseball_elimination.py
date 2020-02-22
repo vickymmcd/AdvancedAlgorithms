@@ -80,8 +80,10 @@ class Division:
         
         self.G.clear()
 
-        # helper dictionaries to hold capacities
+        # helper dictionary for later to hold the teams remaining games
         saturated_edges = {}
+
+        # best outcome for teamID
         mainteam_max = self.teams[teamID].wins + self.teams[teamID].remaining
 
         team_ids = list(self.get_team_IDs())
@@ -103,12 +105,20 @@ class Division:
 
             for j, other_team_id in enumerate(team_ids):
                 if j not in teams_already_battled:
+                    # remaining games between two teams
                     remaining_games = self.teams[id].get_against(other_team_id)
+
+                    # connect a matchup between these two teams to the right nodes
                     mid_edges.append((self.teams[id].name + "-" + self.teams[other_team_id].name, self.teams[id].name, {"capacity": remaining_games, 'flow':0}))
                     mid_edges.append((self.teams[id].name + "-" + self.teams[other_team_id].name, self.teams[other_team_id].name, {"capacity": remaining_games, 'flow':0}))
+                    
+                    # connect the matchup node to the source
                     source_edges.append(("source", self.teams[id].name + "-" + self.teams[other_team_id].name, {"capacity": remaining_games, 'flow':0}))
+                    
+                    # update saturated edges
                     saturated_edges[self.teams[id].name + "-" + self.teams[other_team_id].name] = remaining_games
 
+        # add all these edges to G
         self.G.add_edges_from(sink_edges)
         self.G.add_edges_from(mid_edges)
         self.G.add_edges_from(source_edges)
