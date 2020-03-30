@@ -32,6 +32,7 @@
     </network>
     <fleet>
         <vehicle_profile type="0">
+            <number>4</number>
             <departure_node>1</departure_node>
             <arrival_node>1</arrival_node>
             <capacity>10</capacity>
