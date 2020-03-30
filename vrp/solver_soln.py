@@ -82,7 +82,7 @@ def cvrp_ip(C,q,K,Q,obj=True):
         prob.set_objective('min',x[0,0])
 
     # Solve
-    solution = prob.solve(solver="cplex",verbose=True,gaplim=1e-2)
+    solution = prob.solve(solver="cplex",verbose=False,gaplim=1e-2)
 
     if ("optimal" not in solution['status']):
         return None
@@ -164,8 +164,7 @@ def local_search(C,q,K,Q):
 
 if __name__ == "__main__":
 
-    C,q,K,Q = read_file_type_A('data2/A-n016-k05.xml')
-    #C,q,Q = read_instance_data3('data3/LD11_1.xml')
+    C,q,K,Q = read_file_type_C('data2/C-n013-k04.xml')
 
-    #print(cvrp_ip(C,q,K,Q))
+    print(cvrp_ip(C,q,K,Q))
     print(local_search(C,q,K,Q))
