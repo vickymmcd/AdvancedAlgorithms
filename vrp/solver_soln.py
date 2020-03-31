@@ -31,7 +31,7 @@ def cvrp_ip(C,q,K,Q,obj=True):
     q: list of demands associated with each client node
     K: number of vehicles
     Q: capacity of each vehicle
-    obj:
+    obj: whether to set objective (ignore unless you are doing local search)
     returns:
         objective_value: value of the minimum travel cost
         x: matrix representing number of routes that use each arc
@@ -140,7 +140,8 @@ def local_search(C,q,K,Q):
                 continue
             currind = l
             currval = bestval
-            # Find best location for i
+            # Find best location for i    run_all_tests()
+
             for j in range(1,m-1):
                 if (j != l+1) and (j != l):
                     tempval = bestval
@@ -164,7 +165,7 @@ def local_search(C,q,K,Q):
 
 if __name__ == "__main__":
 
-    C,q,K,Q = read_file_type_C('data2/C-n013-k04.xml')
-
-    print(cvrp_ip(C,q,K,Q))
-    print(local_search(C,q,K,Q))
+    # an example call to test your integer programming implementation
+    C,q,K,Q = read_file_type_A('data/A-n05-k04.xml')
+    travel_cost, x = cvrp_ip(C,q,K,Q)
+    print("Travel cost: " + str(travel_cost))
