@@ -58,7 +58,7 @@ def cvrp_ip(C,q,K,Q,obj=True):
     # x represents # of routes that use each arc
     x = prob.add_variable('x',(n,n),vtype="binary")
     # u represents cumulative quantity of goods delivered between origin and a given node
-    u = prob.add_variable('u',n,vtype="continuous",upper=Q,lower=q)
+    u = prob.add_variable('u',n,vtype="continuous",upper=Q,lower=qnew)
 
     # Add flow conservation constraints
     prob.add_constraint(sum([x[0,j] for j in range(n)]) <= K) # no more than K routes for K vehicles
@@ -84,7 +84,7 @@ def cvrp_ip(C,q,K,Q,obj=True):
     # Solve
     solution = prob.solve(solver="cplex",verbose=False,gaplim=1e-2)
 
-    if ("optimal" not in solution['status']):
+    if ("optimal" not in solution.claimedStatus):
         return None
 
     # print edges that are included in the solution
@@ -111,23 +111,27 @@ def local_search(C,q,K,Q):
         bestx: matrix representing number of routes that use each arc
     '''
     n = len(q)
-    _, xinit = cvrp_ip(C,q,K,Q,False)
+    val, xinit = cvrp_ip(C,q,K,Q,False)
     max_iters = 1
+    print(val)
 
     # Get connected components
     bestx = []
     visited = [False for _ in range(n)]
     starts = [i for i in range(n) if xinit[0,i].value == 1]
+    print(starts)
     for i in starts:
         comp,_ = DFS(i,xinit,[False for _ in range(n)],[])
         bestx.append(0)
         bestx.extend(comp)
     bestx.append(0)
+    print(bestx)
 
     m = len(bestx)
     bestval = 0
     for l in range(m-1):
         bestval += C[bestx[l],bestx[l+1]]
+    print(bestval)
 
     iters = 0
     updated = True
@@ -140,8 +144,7 @@ def local_search(C,q,K,Q):
                 continue
             currind = l
             currval = bestval
-            # Find best location for i    run_all_tests()
-
+            # Find best location for i
             for j in range(1,m-1):
                 if (j != l+1) and (j != l):
                     tempval = bestval
@@ -168,4 +171,6 @@ if __name__ == "__main__":
     # an example call to test your integer programming implementation
     C,q,K,Q = read_file_type_A('data/A-n05-k04.xml')
     travel_cost, x = cvrp_ip(C,q,K,Q)
+    print("Travel cost: " + str(travel_cost))
+    travel_cost, x = local_search(C,q,K,Q)
     print("Travel cost: " + str(travel_cost))
