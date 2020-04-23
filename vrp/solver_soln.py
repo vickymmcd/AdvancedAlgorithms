@@ -97,6 +97,10 @@ def cvrp_ip(C,q,K,Q,obj=True):
     return objective_value, x
 
 # Local search
+# FIXME: There is a bug in the local_search solution below that we never fixed
+# since we made this problem optional. You need to check the capacity
+# constraint when looking at other possible solutions to move to. You could
+# do it by adding a function that checks whether a given solution is feasible.
 def local_search(C,q,K,Q):
     '''
     Solves the capacitated vehicle routing problem using a local search
