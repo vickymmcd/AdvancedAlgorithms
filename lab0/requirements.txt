@@ -1,5 +1,5 @@
 cvxopt==1.2.7
 decorator==4.4.1
 networkx==2.4
-numpy==1.18.1
+numpy==1.21.0
 PICOS==1.2.0.post36
